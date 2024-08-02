@@ -22,7 +22,7 @@ class Container implements ContainerInterface
         return class_exists($id);
     }
 
-    public function get(string $id, bool $new = false)
+    public function get(string $id, array $params = [], bool $new = false)
     {
         if (!$new) {
             if (array_key_exists($id, $this->caches)) {
@@ -31,7 +31,7 @@ class Container implements ContainerInterface
         }
 
         if (isset($this->items[$id])) {
-            $args = $this->reflectArguments($this->items[$id]);
+            $args = $this->reflectArguments($this->items[$id], $params);
             $obj = call_user_func($this->items[$id], ...$args);
             if (!is_a($obj, $id)) {
                 throw new ContainerException(sprintf(
@@ -41,7 +41,7 @@ class Container implements ContainerInterface
             }
         } elseif (class_exists($id)) {
             $reflector = new ReflectionClass($id);
-            $args = $reflector->getConstructor() === null ? [] : $this->reflectArguments([$id, '__construct'], $this->args[$id] ?? []);
+            $args = $reflector->getConstructor() === null ? [] : $this->reflectArguments([$id, '__construct'], array_merge($this->args[$id] ?? [], $params));
             $obj = $reflector->newInstanceArgs($args);
         } else {
             throw new NotFoundException(
